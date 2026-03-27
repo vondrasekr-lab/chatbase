@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: #ffffff;
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --font-sans: var(--font-outfit);
+}
+
+:root {
+  --background: #FAFAF9;
+  --foreground: #0F172A;
+  --primary: #2563EB; /* Modrá pro CRM PRO */
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --font-outfit: "Outfit", sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+}

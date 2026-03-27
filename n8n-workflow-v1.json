@@ -1,0 +1,71 @@
+{
+  "name": "CRM Chat AI - Gemini Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-ai-webhook",
+        "options": {}
+      },
+      "name": "Webhook In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-pro",
+        "prompt": "Jsi profesionální asistent. Uživatel {{ $json.user_name }} se ptá ze stránky {{ $json.page_url }}: {{ $json.content }}",
+        "options": {}
+      },
+      "name": "Gemini AI",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://tvuj-chat-pro.cz/api/webhook",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"thread_id\": \"{{ $node[\"Webhook In\"].json[\"thread_id\"] }}\",\n  \"content\": \"{{ $json.text }}\",\n  \"secret\": \"MojeTajneHeslo123\"\n}",
+        "options": {}
+      },
+      "name": "HTTP Request Out",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook In": {
+      "main": [
+        [
+          {
+            "node": "Gemini AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini AI": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
