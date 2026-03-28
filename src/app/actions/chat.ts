@@ -39,6 +39,7 @@ export async function sendChatMessage(data: {
   message: string, 
   userId?: string, 
   page: string,
+  siteId?: string,
   userAgent?: string 
 }) {
   const supabase = await createClient();
@@ -50,13 +51,27 @@ export async function sendChatMessage(data: {
 
   const geo = await getGeoLocation(ip);
   
+  let finalThreadId: string;
+  let ownerId: string | null = null;
+
+  // 1. Zjistit majitele podle Site ID
+  if (data.siteId) {
+    const { data: site } = await supabase
+      .from("chat_sites")
+      .select("owner_id")
+      .eq("id", data.siteId)
+      .single();
+    
+    if (site) {
+      ownerId = site.owner_id;
+    }
+  }
+
   const { data: thread } = await supabase
     .from("chat_threads")
     .select("id")
     .eq("email", data.email)
     .single();
-
-  let finalThreadId: string;
 
   if (!thread) {
     const { data: newThread, error: threadError } = await supabase
@@ -65,6 +80,8 @@ export async function sendChatMessage(data: {
         full_name: data.name,
         email: data.email,
         user_id: data.userId || null,
+        owner_id: ownerId, // PŘIŘAZENÍ MAJITELE
+        site_id: data.siteId || null,
         ip_address: ip,
         user_agent: ua,
         metadata: {
@@ -203,4 +220,36 @@ export async function getChatMessagesById(threadId: string) {
     .order("created_at", { ascending: true });
 
   return { messages: messages || [] };
+}
+
+export async function getOrCreateSite() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { site: null };
+
+  const { data: existingSite } = await supabase
+    .from("chat_sites")
+    .select("*")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  if (existingSite) return { site: existingSite };
+
+  const { data: newSite, error } = await supabase
+    .from("chat_sites")
+    .insert({
+      owner_id: user.id,
+      name: "Default Site",
+      domain: ""
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Chat] Site Error:", error.message);
+    return { site: null };
+  }
+
+  return { site: newSite };
 }
